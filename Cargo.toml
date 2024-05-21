@@ -9,3 +9,6 @@ csv = "1.3.0"
 rust_decimal = { version = "1.35.0", features = ["serde-arbitrary-precision"] }
 serde = { version = "1.0.202", features = ["derive"] }
 testresult = "0.4.0"
+
+[dev-dependencies]
+rstest = "0.19.0"
