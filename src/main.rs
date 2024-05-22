@@ -1,7 +1,7 @@
 use std::path::PathBuf;
 
 use clap::Parser;
-use csv::{Writer};
+use csv::Writer;
 use tx_engine::process;
 
 #[derive(Debug, Parser)]
