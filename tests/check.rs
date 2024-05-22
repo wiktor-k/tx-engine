@@ -7,7 +7,7 @@ use testresult::TestResult;
 fn main(#[files("tests/test-cases/*.input.csv")] path: PathBuf) -> TestResult {
     use std::collections::HashMap;
 
-    use csv::Trim;
+    use csv::{Trim, Writer};
     use tx_engine::{process, Account, ClientId};
 
     let output = PathBuf::from(path.display().to_string().replace(".input.", ".output."));
@@ -23,6 +23,15 @@ fn main(#[files("tests/test-cases/*.input.csv")] path: PathBuf) -> TestResult {
         accounts.entry(item.client).or_insert(item);
     }
     let output = process(path)?;
+
+    // Try to serialize all records.
+    // This test prevents subtle serialization issues from appearing at runtime.
+    let mut writer = Writer::from_writer(std::io::stderr());
+    for record in output.values() {
+        writer.serialize(record)?;
+    }
+    writer.flush()?;
+
     assert_eq!(
         output, accounts,
         "expected output must be equal with what process spits out"

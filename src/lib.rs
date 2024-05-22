@@ -61,7 +61,7 @@ pub struct Record {
 ///
 /// The account has associated funds stored in the `amounts` field and
 /// can be frozen (`locked`).
-#[derive(Debug, Serialize, Default, Deserialize, PartialEq, Eq)]
+#[derive(Debug, Default, Deserialize, PartialEq, Eq)]
 pub struct Account {
     /// Identifier of this account.
     pub client: ClientId,
@@ -75,6 +75,26 @@ pub struct Account {
     pub locked: bool,
 }
 
+impl Serialize for Account {
+    /// Serializes account. The inner amounts (available and held) are serialized as
+    /// usual. Total is added as a computed field.
+    /// Sadly, #[serde(flatten)] is not supported by the "rust-csv" create, see:
+    /// <https://github.com/BurntSushi/rust-csv/pull/223>
+    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+    where
+        S: serde::Serializer,
+    {
+        let mut x = serializer.serialize_struct("Account", 3)?;
+        x.serialize_field("client", &self.client)?;
+        x.serialize_field("available", &self.amounts.available)?;
+        x.serialize_field("held", &self.amounts.held)?;
+        // total is always the sum of available and held
+        x.serialize_field("total", &self.amounts.total())?;
+        x.serialize_field("locked", &self.locked)?;
+        x.end()
+    }
+}
+
 /// Funds associated with the account.
 ///
 /// The funds are split into two buckets:
@@ -82,7 +102,7 @@ pub struct Account {
 ///    - held - funds that are held because of pending disputes.
 ///
 /// Additionally there's a total getter which is a sum of the previous two.
-#[derive(Debug, Default, Deserialize, PartialEq, Eq)]
+#[derive(Debug, Default, Deserialize, Serialize, PartialEq, Eq)]
 pub struct Amounts {
     /// Funds that the client can use in transactions.
     pub available: Decimal,
@@ -136,22 +156,6 @@ impl Amounts {
     /// Returns a total amount which is a sum of held and available funds.
     pub fn total(&self) -> Decimal {
         self.available + self.held
-    }
-}
-
-impl Serialize for Amounts {
-    /// Serializes amounts: available and held are serialized as
-    /// usual. Total is added as a computed field.
-    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
-    where
-        S: serde::Serializer,
-    {
-        let mut x = serializer.serialize_struct("Amounts", 3)?;
-        x.serialize_field("available", &self.available)?;
-        x.serialize_field("held", &self.held)?;
-        // total is always the sum of available and held
-        x.serialize_field("total", &self.total())?;
-        x.end()
     }
 }
 
