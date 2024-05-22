@@ -26,11 +26,13 @@ fn main(#[files("tests/test-cases/*.input.csv")] path: PathBuf) -> TestResult {
 
     // Try to serialize all records.
     // This test prevents subtle serialization issues from appearing at runtime.
-    let mut writer = Writer::from_writer(std::io::stderr());
+    let mut writer = Writer::from_writer(vec![]);
     for record in output.values() {
         writer.serialize(record)?;
     }
     writer.flush()?;
+    let records = writer.into_inner()?;
+    eprintln!("Records:\n{}", String::from_utf8_lossy(&records));
 
     assert_eq!(
         output, accounts,
