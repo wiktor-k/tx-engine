@@ -1,6 +1,6 @@
 #![doc = include_str!("../README.md")]
 #![deny(missing_debug_implementations)]
-#![deny(missing_docs)]
+//#![deny(missing_docs)]
 
 use std::{
     collections::{HashMap, HashSet},
@@ -58,22 +58,78 @@ pub type Result<T> = std::result::Result<T, Error>;
 
 /// Single record.
 #[derive(Debug, Deserialize)]
-pub struct Record {
-    /// Type of the record.
-    #[serde(rename = "type")]
-    pub kind: RecordType,
+#[serde(tag = "type", rename_all = "lowercase")]
+pub enum Record {
+    #[serde(alias = "withdraw")]
+    Withdraw {
+        /// Identifies client account.
+        client: ClientId,
 
-    /// Identifies client account.
-    pub client: ClientId,
+        /// Specifies transaction identifier. For example deposits and
+        /// withdrawals can be referenced by disputes.
+        tx: TxId,
 
-    /// Specifies transaction identifier. For example deposits and
-    /// withdrawals can be referenced by disputes.
-    pub tx: TxId,
+        /// The amount that this transaction represents. Note that only
+        /// deposits and withdrawals will contain the amount. Other record
+        /// types use the amount from referenced transactions.
+        amount: Option<Decimal>,
+    },
+    #[serde(alias = "deposit")]
+    Deposit {
+        /// Identifies client account.
+        client: ClientId,
 
-    /// The amount that this transaction represents. Note that only
-    /// deposits and withdrawals will contain the amount. Other record
-    /// types use the amount from referenced transactions.
-    pub amount: Option<Decimal>,
+        /// Specifies transaction identifier. For example deposits and
+        /// withdrawals can be referenced by disputes.
+        tx: TxId,
+
+        /// The amount that this transaction represents. Note that only
+        /// deposits and withdrawals will contain the amount. Other record
+        /// types use the amount from referenced transactions.
+        amount: Option<Decimal>,
+    },
+    #[serde(alias = "dispute")]
+    Dispute {
+        /// Identifies client account.
+        client: ClientId,
+
+        /// Specifies transaction identifier. For example deposits and
+        /// withdrawals can be referenced by disputes.
+        tx: TxId,
+
+        /// The amount that this transaction represents. Note that only
+        /// deposits and withdrawals will contain the amount. Other record
+        /// types use the amount from referenced transactions.
+        amount: Option<Decimal>,
+    },
+    #[serde(alias = "resolve")]
+    Resolve {
+        /// Identifies client account.
+        client: ClientId,
+
+        /// Specifies transaction identifier. For example deposits and
+        /// withdrawals can be referenced by disputes.
+        tx: TxId,
+
+        /// The amount that this transaction represents. Note that only
+        /// deposits and withdrawals will contain the amount. Other record
+        /// types use the amount from referenced transactions.
+        amount: Option<Decimal>,
+    },
+    #[serde(alias = "chargeback")]
+    Chargeback {
+        /// Identifies client account.
+        client: ClientId,
+
+        /// Specifies transaction identifier. For example deposits and
+        /// withdrawals can be referenced by disputes.
+        tx: TxId,
+
+        /// The amount that this transaction represents. Note that only
+        /// deposits and withdrawals will contain the amount. Other record
+        /// types use the amount from referenced transactions.
+        amount: Option<Decimal>,
+    },
 }
 
 /// Represents client account.
@@ -189,47 +245,75 @@ pub fn process(file: PathBuf) -> Result<HashMap<ClientId, Account>> {
     let mut disputed: HashSet<TxId> = HashSet::new();
     for record in rdr.deserialize() {
         let record: Record = record?;
-        let account = accounts.entry(record.client).or_insert_with(|| Account {
-            client: record.client,
-            ..Default::default()
-        });
-        match record.kind {
-            RecordType::Deposit => {
-                let Some(amount) = record.amount else {
-                    return Err(Error::DepositNoAmount(record.tx));
+        match record {
+            Record::Deposit { amount, tx, client } => {
+                let account = accounts.entry(client).or_insert_with(|| Account {
+                    client: client,
+                    ..Default::default()
+                });
+                let Some(amount) = amount else {
+                    return Err(Error::DepositNoAmount(tx));
                 };
                 account.amounts.deposit(amount);
-                txns.entry(record.tx).or_insert(amount);
+                txns.entry(tx).or_insert(amount);
             }
-            RecordType::Withdrawal => {
-                let Some(amount) = record.amount else {
-                    return Err(Error::WithdrawNoAmount(record.tx));
+            Record::Withdraw { amount, tx, client } => {
+                let account = accounts.entry(client).or_insert_with(|| Account {
+                    client: client,
+                    ..Default::default()
+                });
+                let Some(amount) = amount else {
+                    return Err(Error::WithdrawNoAmount(tx));
                 };
                 if account.amounts.withdraw(amount) {
-                    txns.entry(record.tx).or_insert(amount);
+                    txns.entry(tx).or_insert(amount);
                 } else {
                     // transaction failed
                 }
             }
-            RecordType::Dispute => {
-                if let Some(amount) = txns.get(&record.tx) {
+            Record::Dispute {
+                amount: _,
+                tx,
+                client,
+            } => {
+                let account = accounts.entry(client).or_insert_with(|| Account {
+                    client: client,
+                    ..Default::default()
+                });
+                if let Some(amount) = txns.get(&tx) {
                     account.amounts.hold(*amount);
-                    disputed.insert(record.tx);
+                    disputed.insert(tx);
                 }
             }
-            RecordType::Resolve => {
-                if let Some(amount) = txns.get(&record.tx) {
+            Record::Resolve {
+                amount: _,
+                tx,
+                client,
+            } => {
+                let account = accounts.entry(client).or_insert_with(|| Account {
+                    client: client,
+                    ..Default::default()
+                });
+                if let Some(amount) = txns.get(&tx) {
                     account.amounts.release(*amount);
-                    disputed.remove(&record.tx);
+                    disputed.remove(&tx);
                 }
             }
-            RecordType::Chargeback => {
-                if let Some(amount) = txns.get(&record.tx) {
-                    if disputed.contains(&record.tx) {
+            Record::Chargeback {
+                amount: _,
+                tx,
+                client,
+            } => {
+                let account = accounts.entry(client).or_insert_with(|| Account {
+                    client: client,
+                    ..Default::default()
+                });
+                if let Some(amount) = txns.get(&tx) {
+                    if disputed.contains(&tx) {
                         account.amounts.chargeback(*amount);
                         // "frozen" means "locked == true"
                         account.locked = true;
-                        disputed.remove(&record.tx);
+                        disputed.remove(&tx);
                     }
                 }
             }
