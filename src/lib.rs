@@ -37,6 +37,25 @@ pub type ClientId = u16;
 /// Represents transaction identifier.
 pub type TxId = u32;
 
+/// Transaction engine error.
+#[derive(Debug, thiserror::Error)]
+pub enum Error {
+    /// Deposit used but no amount has been specified.
+    #[error("Deposit used but no amount is specified in transaction {0}")]
+    DepositNoAmount(TxId),
+
+    /// Withdraw used but no amount has been specified.
+    #[error("Withdraw used but no amount is specified in transaction {0}")]
+    WithdrawNoAmount(TxId),
+
+    /// CSV serialization error.
+    #[error("CSV serialization error: {0}")]
+    Csv(#[from] csv::Error),
+}
+
+/// Result of transaction engine.
+pub type Result<T> = std::result::Result<T, Error>;
+
 /// Single record.
 #[derive(Debug, Deserialize)]
 pub struct Record {
@@ -80,7 +99,7 @@ impl Serialize for Account {
     /// usual. Total is added as a computed field.
     /// Sadly, #[serde(flatten)] is not supported by the "rust-csv" create, see:
     /// <https://github.com/BurntSushi/rust-csv/pull/223>
-    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+    fn serialize<S>(&self, serializer: S) -> std::result::Result<S::Ok, S::Error>
     where
         S: serde::Serializer,
     {
@@ -162,7 +181,7 @@ impl Amounts {
 /// Process the input CSV file.
 ///
 /// The input file will have the values stripped of whitespace.
-pub fn process(file: PathBuf) -> testresult::TestResult<HashMap<ClientId, Account>> {
+pub fn process(file: PathBuf) -> Result<HashMap<ClientId, Account>> {
     let mut rdr = csv::ReaderBuilder::new().trim(Trim::All).from_path(file)?;
 
     let mut accounts = HashMap::<ClientId, Account>::new();
@@ -177,14 +196,14 @@ pub fn process(file: PathBuf) -> testresult::TestResult<HashMap<ClientId, Accoun
         match record.kind {
             RecordType::Deposit => {
                 let Some(amount) = record.amount else {
-                    panic!("Deposit without amount");
+                    return Err(Error::DepositNoAmount(record.tx));
                 };
                 account.amounts.deposit(amount);
                 txns.entry(record.tx).or_insert(amount);
             }
             RecordType::Withdrawal => {
                 let Some(amount) = record.amount else {
-                    panic!("Withdrawal without amount");
+                    return Err(Error::WithdrawNoAmount(record.tx));
                 };
                 if account.amounts.withdraw(amount) {
                     txns.entry(record.tx).or_insert(amount);
