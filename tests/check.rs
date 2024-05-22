@@ -8,7 +8,7 @@ fn main(#[files("tests/test-cases/*.input.csv")] path: PathBuf) -> TestResult {
     use std::collections::HashMap;
 
     use csv::Trim;
-    use tx_engine::{process, ClientId, Output};
+    use tx_engine::{process, Account, ClientId};
 
     let output = PathBuf::from(path.display().to_string().replace(".input.", ".output."));
     eprintln!("found path: {path:?} output: {output:?}");
@@ -17,9 +17,9 @@ fn main(#[files("tests/test-cases/*.input.csv")] path: PathBuf) -> TestResult {
         .trim(Trim::All)
         .from_path(output)?;
 
-    let mut accounts = HashMap::<ClientId, Output>::new();
+    let mut accounts = HashMap::<ClientId, Account>::new();
     for item in rdr.deserialize() {
-        let item: Output = item?;
+        let item: Account = item?;
         accounts.entry(item.client).or_insert(item);
     }
     let output = process(path)?;
