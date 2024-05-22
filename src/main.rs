@@ -1,7 +1,7 @@
 use std::path::PathBuf;
 
 use clap::Parser;
-use csv::{Trim, Writer};
+use csv::{Writer};
 use tx_engine::process;
 
 #[derive(Debug, Parser)]
@@ -12,13 +12,10 @@ struct Args {
 fn main() -> testresult::TestResult {
     let args = Args::parse();
 
-    let mut rdr = csv::ReaderBuilder::new()
-        .trim(Trim::All)
-        .from_path(&args.input)?;
-    let records = rdr.deserialize().collect::<Result<_, _>>()?;
-    let output = process(records);
+    let output = process(args.input)?;
+
     let mut writer = Writer::from_writer(std::io::stdout());
-    for record in output.iter() {
+    for record in output.into_values() {
         writer.serialize(&record)?;
     }
     writer.flush()?;
