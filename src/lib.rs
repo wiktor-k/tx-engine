@@ -208,19 +208,23 @@ pub fn process(file: PathBuf) -> Result<HashMap<ClientId, Account>> {
                 if account.amounts.withdraw(amount) {
                     txns.entry(record.tx).or_insert(amount);
                 } else {
-                    // transaction failed
+                    log::info!("Transaction {} failed - insufficient funds.", record.tx);
                 }
             }
             RecordType::Dispute => {
                 if let Some(amount) = txns.get(&record.tx) {
                     account.amounts.hold(*amount);
                     disputed.insert(record.tx);
+                } else {
+                    log::info!("Dispute failed - transaction {} not found.", record.tx);
                 }
             }
             RecordType::Resolve => {
                 if let Some(amount) = txns.get(&record.tx) {
                     account.amounts.release(*amount);
                     disputed.remove(&record.tx);
+                } else {
+                    log::info!("Resolve failed - transaction {} not found.", record.tx);
                 }
             }
             RecordType::Chargeback => {
@@ -230,7 +234,14 @@ pub fn process(file: PathBuf) -> Result<HashMap<ClientId, Account>> {
                         // "frozen" means "locked == true"
                         account.locked = true;
                         disputed.remove(&record.tx);
+                    } else {
+                        log::info!(
+                            "Chargeback failed - transaction {} not under dispute.",
+                            record.tx
+                        );
                     }
+                } else {
+                    log::info!("Chargeback failed - transaction {} not found.", record.tx);
                 }
             }
         }

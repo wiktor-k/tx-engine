@@ -10,6 +10,8 @@ struct Args {
 }
 
 fn main() -> testresult::TestResult {
+    env_logger::init();
+
     let args = Args::parse();
 
     let output = process(args.input)?;
