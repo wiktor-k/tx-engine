@@ -9,6 +9,24 @@ Each client's account is modelled to contain not a single value but is split int
   - held - amount that is blocked as there are transactions that are disputed,
   - total - sum of available and held.
 
+## Running
+
+The crate exposes a command-line interface, where the first argument is a filename to process. It will output the state of accounts in CSV format:
+
+```sh
+$ cargo run -- tests/test-cases/chargeback-ok.input.csv
+client,available,held,total,locked
+1,0,0,0,true
+```
+
+Additionally, it can be used as a library. The engine exposes `process` function:
+
+```rust
+use tx_engine::process;
+
+let results = process("tests/test-cases/chargeback-ok.input.csv");
+```
+
 ## Supported transaction types
 
 The project implements several test-cases based on the specification (see `tests/test-cases` directory). The exact test case name will be inserted in `code` below.

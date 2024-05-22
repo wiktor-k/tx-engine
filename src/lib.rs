@@ -4,7 +4,7 @@
 
 use std::{
     collections::{HashMap, HashSet},
-    path::PathBuf,
+    path::Path,
 };
 
 use csv::Trim;
@@ -181,7 +181,7 @@ impl Amounts {
 /// Process the input CSV file.
 ///
 /// The input file will have the values stripped of whitespace.
-pub fn process(file: PathBuf) -> Result<HashMap<ClientId, Account>> {
+pub fn process(file: impl AsRef<Path>) -> Result<HashMap<ClientId, Account>> {
     let mut rdr = csv::ReaderBuilder::new().trim(Trim::All).from_path(file)?;
 
     let mut accounts = HashMap::<ClientId, Account>::new();
