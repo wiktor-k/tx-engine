@@ -121,7 +121,8 @@ impl Serialize for Account {
 ///    - held - funds that are held because of pending disputes.
 ///
 /// Additionally there's a total getter which is a sum of the previous two.
-#[derive(Debug, Default, Deserialize, Serialize, PartialEq, Eq)]
+#[derive(Debug, Default, Deserialize, Serialize, PartialEq, Eq, Clone)]
+#[cfg_attr(test, derive(proptest_derive::Arbitrary))]
 pub struct Amounts {
     /// Funds that the client can use in transactions.
     pub available: Decimal,
@@ -251,6 +252,8 @@ pub fn process(file: impl AsRef<Path>) -> Result<HashMap<ClientId, Account>> {
 
 #[cfg(test)]
 mod tests {
+    use proptest::prelude::*;
+
     use super::*;
 
     #[test]
@@ -269,5 +272,16 @@ mod tests {
         assert!(!a.withdraw(2.into()));
         assert_eq!(a.available, 1.into());
         assert_eq!(a.held, 0.into());
+    }
+
+    proptest! {
+        #[test]
+        #[ignore = "enable this test to see the constraints of the underlying decimal"]
+        fn hold_and_release_is_no_op(amounts: Amounts, amount: Decimal) {
+            let mut new_amounts = amounts.clone();
+            new_amounts.hold(amount);
+            new_amounts.release(amount);
+            assert_eq!(amounts, new_amounts);
+        }
     }
 }

@@ -15,10 +15,12 @@ clap = { version = "4.5.4", features = ["derive"] }
 csv = "1.3.0"
 env_logger = "0.11.3"
 log = "0.4.21"
-rust_decimal = { version = "1.35.0", features = ["serde-arbitrary-precision"] }
+rust_decimal = { version = "1.35.0", features = ["serde-arbitrary-precision", "proptest"] }
 serde = { version = "1.0.202", features = ["derive"] }
 testresult = "0.4.0"
 thiserror = "1.0.61"
 
 [dev-dependencies]
+proptest = "1.4.0"
+proptest-derive = "0.4.0"
 rstest = "0.19.0"

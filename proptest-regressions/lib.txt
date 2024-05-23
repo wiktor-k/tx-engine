@@ -1,0 +1,7 @@
+# Seeds for failure cases proptest has generated in the past. It is
+# automatically read and these particular cases re-run before any
+# novel cases are generated.
+#
+# It is recommended to check this file in to source control so that
+# everyone who runs the test benefits from these saved cases.
+cc 567edc99bdced64b7bee00584a66d8cf4061669e8fbe81ca867401117fff4e56 # shrinks to amounts = Amounts { available: 0, held: 18446744073709551.616 }, amount = 7922816258805131388838215680
