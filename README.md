@@ -24,7 +24,7 @@ Additionally, it can be used as a library. The engine exposes `process` function
 ```rust
 use tx_engine::process;
 
-let results = process("tests/test-cases/chargeback-ok.input.csv");
+let results = process("tests/test-cases/chargeback-ok.input.csv").expect("processing to succeed");
 ```
 
 ## Supported transaction types
@@ -62,3 +62,11 @@ Marks the dispute as resolved reversing the underlying transaction that was unde
 If the chargeback references a non-existent transaction it is ignored (`chargeback-bad-tx`). If it references a transaction that is not being disputed it's also ignored (`chargeback-not-disputed`).
 
 There's additional test which chargebacks one transaction that is disputed out of two that are open (`chargeback-disputed-and-not-disputed`).
+
+## Future work
+
+One are of improvement that could be pursued is converting operations (deposits, withdrawals) into enums which take appropriate values. This way we'd avoid the optional amount (that doesn't exist for disputes) and the [values would always be valid](https://fsharpforfunandprofit.com/posts/designing-with-types-making-illegal-states-unrepresentable/).
+
+Unfortunately [rust-csv doesn't support](https://github.com/BurntSushi/rust-csv/pull/231) [tagged enums](https://serde.rs/enum-representations.html).
+
+This could be worked around with a custom Deserializer (a proof-of-concept is in the `tagged-enums` branch).
