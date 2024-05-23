@@ -63,6 +63,12 @@ If the chargeback references a non-existent transaction it is ignored (`chargeba
 
 There's additional test which chargebacks one transaction that is disputed out of two that are open (`chargeback-disputed-and-not-disputed`).
 
+## Open questions
+
+1. The dispute for both withdrawals and deposits is handled the same way. Should it be handled differently? (Because deposits are basically the reverse of a withdrawal)
+
+2. The library uses decimals for arbitrary precision due to correctness. It could be optimized using the "only four places are required".
+
 ## Future work
 
 One are of improvement that could be pursued is converting operations (deposits, withdrawals) into enums which take appropriate values. This way we'd avoid the optional amount (that doesn't exist for disputes) and the [values would always be valid](https://fsharpforfunandprofit.com/posts/designing-with-types-making-illegal-states-unrepresentable/).
