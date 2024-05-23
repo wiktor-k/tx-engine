@@ -67,7 +67,7 @@ There's additional test which chargebacks one transaction that is disputed out o
 
 1. The dispute for both withdrawals and deposits is handled the same way. Should it be handled differently? (Because deposits are basically the reverse of a withdrawal)
 
-2. The library uses decimals for arbitrary precision due to correctness. It could be optimized using the "only four places are required".
+2. The library uses `rust_decimal` which has [its own precision](https://docs.rs/rust_decimal/latest/rust_decimal/struct.Decimal.html). Based on the other constraints [other libraries may be more suitable](https://docs.rs/rust_decimal/latest/rust_decimal/#comparison-to-other-decimal-implementations).
 
 ## Future work
 

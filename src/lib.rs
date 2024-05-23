@@ -248,3 +248,26 @@ pub fn process(file: impl AsRef<Path>) -> Result<HashMap<ClientId, Account>> {
     }
     Ok(accounts)
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn withdraw_ok() {
+        let mut a = Amounts::default();
+        a.deposit(2.into());
+        assert!(a.withdraw(1.into()));
+        assert_eq!(a.available, 1.into());
+        assert_eq!(a.held, 0.into());
+    }
+
+    #[test]
+    fn withdraw_failed() {
+        let mut a = Amounts::default();
+        a.deposit(1.into());
+        assert!(!a.withdraw(2.into()));
+        assert_eq!(a.available, 1.into());
+        assert_eq!(a.held, 0.into());
+    }
+}
